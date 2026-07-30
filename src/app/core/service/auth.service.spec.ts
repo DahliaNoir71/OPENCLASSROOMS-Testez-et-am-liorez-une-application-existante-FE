@@ -72,4 +72,61 @@ describe('AuthService', () => {
     expect(service.getToken()).toBeNull();
     expect(service.isAuthenticated()).toBe(false);
   });
+
+  // A6
+  it('isAuthenticated retourne false pour un token expiré', () => {
+    const now = Date.now();
+    jest.useFakeTimers().setSystemTime(now);
+    const token = makeJwt(Math.floor(now / 1000) - 60);
+
+    const service = createService();
+    service.saveToken(token);
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // A7
+  it('un token valide devient invalide après expiration', () => {
+    const now = Date.now();
+    jest.useFakeTimers().setSystemTime(now);
+    const token = makeJwt(Math.floor(now / 1000) + 60);
+
+    const service = createService();
+    service.saveToken(token);
+    expect(service.isAuthenticated()).toBe(true);
+
+    jest.setSystemTime(now + 61_000);
+    service.logout();          // passage à null : vrai changement de valeur
+    service.saveToken(token);  // re-pose : le computed se recalcule à l'horloge avancée
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // A8
+  it('token à 2 segments → non authentifié', () => {
+    const service = createService();
+    service.saveToken('aaa.bbb');
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // A9
+  it('payload non-JSON → non authentifié', () => {
+    const payload = btoa('not-json').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+    const service = createService();
+    service.saveToken(`header.${payload}.signature`);
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // A10
+  it('payload sans claim exp → non authentifié', () => {
+    const service = createService();
+    service.saveToken(makeJwt());
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // A11
+  it('décode un payload base64url avec caractères accentués', () => {
+    const token = makeJwt(futureExp(), { name: 'Émilie Nuñez' });
+    const service = createService();
+    service.saveToken(token);
+    expect(service.isAuthenticated()).toBe(true);
+  });
 });
