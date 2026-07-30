@@ -2,6 +2,8 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { AuthService } from './auth.service';
+import { Login } from '../models/Login';
+import { LoginResponse } from '../models/LoginResponse';
 import { makeJwt } from '../../../testing/jwt.helper';
 
 describe('AuthService', () => {
@@ -128,5 +130,31 @@ describe('AuthService', () => {
     const service = createService();
     service.saveToken(token);
     expect(service.isAuthenticated()).toBe(true);
+  });
+
+  // A13
+  it('login émet un POST /api/login avec les identifiants', () => {
+    const service = createService();
+    const credentials: Login = { login: 'jdoe', password: 'pwd' };
+
+    service.login(credentials).subscribe();
+
+    const req = httpTesting.expectOne('/api/login');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual(credentials);
+    req.flush('fake.jwt.token');
+  });
+
+  // A14
+  it('login mappe la réponse texte en {token}', () => {
+    const service = createService();
+    let response: LoginResponse | undefined;
+
+    service.login({ login: 'jdoe', password: 'pwd' }).subscribe(res => (response = res));
+
+    const req = httpTesting.expectOne('/api/login');
+    req.flush('fake.jwt.token');
+
+    expect(response).toEqual({ token: 'fake.jwt.token' });
   });
 });
