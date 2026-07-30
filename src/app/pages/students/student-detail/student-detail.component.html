@@ -1,0 +1,29 @@
+<div class="container mt-4">
+  <h2>Détail de l'étudiant</h2>
+
+  @if (errorMessage) {
+    <div class="alert alert-danger">{{ errorMessage }}</div>
+  }
+
+  @if (loading) {
+    <div class="d-flex justify-content-center my-3">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  }
+
+  @if (student) {
+    <div class="card">
+      <div class="card-body">
+        <p><strong>Id :</strong> {{ student.id }}</p>
+        <p><strong>Prénom :</strong> {{ student.firstName }}</p>
+        <p><strong>Nom :</strong> {{ student.lastName }}</p>
+      </div>
+    </div>
+
+    <div class="mt-3">
+      <a class="btn btn-warning mr-2" [routerLink]="['/students', student.id, 'edit']">Éditer</a>
+      <button type="button" class="btn btn-danger mr-2" (click)="onDelete()">Supprimer</button>
+      <a class="btn btn-secondary" [routerLink]="['/students']">Retour à la liste</a>
+    </div>
+  }
+</div>

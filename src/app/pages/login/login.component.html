@@ -36,16 +36,14 @@
         }
       </div>
 
+      <!-- Bannière de confirmation après une inscription réussie -->
+      @if (justRegistered) {
+        <div class="alert alert-success">Compte créé. Connectez-vous.</div>
+      }
+
       <!-- État erreur : message serveur lisible -->
       @if (errorMessage) {
         <div class="alert alert-danger">{{ errorMessage }}</div>
-      }
-
-      <!-- État succès : token reçu, affiché pour vérification manuelle -->
-      @if (token) {
-        <div class="alert alert-success">
-          Connecté. Token reçu : <code>{{ token }}</code>
-        </div>
       }
 
       <div class="text-center">

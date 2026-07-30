@@ -1,0 +1,47 @@
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Étudiants</h2>
+    <a class="btn btn-primary" [routerLink]="['/students/new']">Nouvel étudiant</a>
+  </div>
+
+  @if (errorMessage) {
+    <div class="alert alert-danger">{{ errorMessage }}</div>
+  }
+
+  @if (loading) {
+    <div class="d-flex justify-content-center my-3">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  }
+
+  @if (!loading) {
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Id</th>
+          <th>Prénom</th>
+          <th>Nom</th>
+          <th class="text-right">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (student of students; track student.id) {
+          <tr>
+            <td>{{ student.id }}</td>
+            <td>{{ student.firstName }}</td>
+            <td>{{ student.lastName }}</td>
+            <td class="text-right">
+              <a class="btn btn-sm btn-info mr-1" [routerLink]="['/students', student.id]">Voir</a>
+              <a class="btn btn-sm btn-warning mr-1" [routerLink]="['/students', student.id, 'edit']">Éditer</a>
+              <button type="button" class="btn btn-sm btn-danger" (click)="onDelete(student)">Supprimer</button>
+            </td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="4" class="text-center text-muted">Aucun étudiant.</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

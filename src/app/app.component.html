@@ -1,1 +1,28 @@
-<router-outlet/>
+<nav class="navbar navbar-expand navbar-dark bg-dark">
+  <a class="navbar-brand" routerLink="/">Étudiants</a>
+  <ul class="navbar-nav ml-auto">
+    @if (authService.isLoggedIn()) {
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/students" routerLinkActive="active">Étudiants</a>
+      </li>
+      <li class="nav-item">
+        <button type="button" class="btn btn-link nav-link" (click)="onLogout()">Déconnexion</button>
+      </li>
+    } @else {
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/" routerLinkActive="active"
+           [routerLinkActiveOptions]="{ exact: true }">Accueil</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/login" routerLinkActive="active">Se connecter</a>
+      </li>
+      <li class="nav-item">
+        <a class="nav-link" routerLink="/register" routerLinkActive="active">S'enregistrer</a>
+      </li>
+    }
+  </ul>
+</nav>
+
+<main class="container-fluid p-0">
+  <router-outlet/>
+</main>
