@@ -5,8 +5,8 @@
 function base64UrlEncode(value: string): string {
   const bytes = new TextEncoder().encode(value);
   let binary = '';
-  for (const byte of bytes) {
-    binary += String.fromCharCode(byte);
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
   return btoa(binary)
     .replace(/\+/g, '-')
@@ -14,7 +14,7 @@ function base64UrlEncode(value: string): string {
     .replace(/=+$/, '');
 }
 
-function buildJwt(expSeconds: number): string {
+export function buildJwt(expSeconds: number): string {
   const header = { alg: 'HS256', typ: 'JWT' };
   const payload = { sub: 'e2e-user', exp: expSeconds };
 
@@ -42,5 +42,3 @@ declare global {
     }
   }
 }
-
-export {};
