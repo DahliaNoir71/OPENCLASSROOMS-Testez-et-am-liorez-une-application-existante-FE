@@ -44,7 +44,7 @@ Le projet suit une pyramide de tests à trois niveaux :
 | --- | --- | --- | --- |
 | Unitaire | Jest | 62 tests | `AuthService`, `UserService`, `StudentService`, `HttpErrorService`, guards, interceptor, table de routage |
 | Intégration | Jest + Angular TestBed | 49 tests | Composants standalone (navbar, landing, login, register, liste/détail/formulaire étudiant) |
-| End-to-end | Cypress | 3 specs stubées (7 tests) + 1 smoke test (1 test) | Parcours utilisateur complets, dans un vrai navigateur |
+| End-to-end | Cypress | 4 specs stubées (7 tests) + 1 smoke test (1 test) | Parcours utilisateur complets, dans un vrai navigateur |
 
 ### Tests unitaires et d'intégration (Jest)
 
@@ -77,7 +77,7 @@ Jest: "global" coverage threshold for statements (99%) not met: 98.44%
 npm run e2e
 ```
 
-**Prérequis** : le serveur de développement Angular doit tourner (`npm start`, sur `http://localhost:4200`). Ces specs (`inscription-connexion`, `etudiants-crud`, `protection-routes`) stubent toutes les réponses API avec `cy.intercept` : aucun back-end n'est nécessaire.
+**Prérequis** : le serveur de développement Angular doit tourner (`npm start`, sur `http://localhost:4200`). Ces specs (`accueil-deconnexion`, `inscription-connexion`, `etudiants-crud`, `protection-routes`) stubent toutes les réponses API avec `cy.intercept` : aucun back-end n'est nécessaire.
 
 ### Smoke test end-to-end contre le back réel (Cypress)
 
@@ -89,6 +89,40 @@ npm run e2e:smoke
 
 Pour garantir l'unicité entre exécutions, le login utilisé est suffixé par un timestamp. **Résidu de données connu** : l'étudiant créé est supprimé en fin de parcours, mais l'utilisateur inscrit reste en base (aucun endpoint de suppression de compte n'est exposé côté front).
 
+### Rapports et couverture E2E (Cypress)
+
+```bash
+npm run e2e:coverage        # 4 specs stubées, sans back-end
+npm run e2e:coverage:full   # + le smoke test contre l'API réelle
+```
+
+La commande enchaîne quatre étapes : nettoyage des rapports, exécution des specs, fusion des résultats en un rapport HTML d'exécution, puis calcul de la couverture des parcours utilisateurs.
+
+**Seuil exigé : 80 % minimum.** Il est appliqué par [scripts/e2e-coverage.mjs](scripts/e2e-coverage.mjs), qui sort en code 1 si un taux passe en dessous — ou si un test E2E échoue.
+
+| Dimension | Seuil requis | Mesuré | Statut |
+| --- | --- | --- | --- |
+| Parcours utilisateurs | ≥ 80 % | **100 %** (11/11) | ✅ +20 pts |
+| Écrans de l'application | ≥ 80 % | **100 %** (6/6) | ✅ +20 pts |
+
+Trois artefacts sont produits dans `cypress/reports/` :
+
+| Fichier | Contenu |
+| --- | --- |
+| `html/execution.html` | rapport d'exécution mochawesome : specs, tests, durées, échecs |
+| `e2e-coverage.html` | matrice de couverture : chaque parcours et chaque écran, avec les tests qui le couvrent |
+| `e2e-coverage.json` | mêmes données, exploitables par une chaîne d'intégration continue |
+
+**Ce que cette mesure est, et ce qu'elle n'est pas.** Il s'agit d'une couverture **fonctionnelle** : la proportion des parcours utilisateurs et des écrans exercés par un test E2E qui passe. Ce n'est pas une couverture de code — celle-là est mesurée par Jest (`coverage/index.html`) et par JaCoCo côté back-end. Le builder Angular `application` (esbuild) n'expose aucun point d'entrée pour instrumenter les sources avec istanbul, ce qui exclut `@cypress/code-coverage` sans repasser l'application sur le builder webpack déprécié.
+
+La mesure est **dérivée des résultats réels** de Cypress, pas déclarée à la main : l'inventaire associe chaque parcours aux tests qui le couvrent, et un parcours n'est compté que si au moins un de ces tests a effectivement passé. Un test supprimé, renommé ou en échec fait baisser le taux :
+
+```
+✖ Seuil de couverture E2E non atteint : parcours 9.1 % < 80 % ; écrans 16.7 % < 80 %
+```
+
+Les 11 parcours inventoriés : consulter l'accueil, créer un compte, se connecter, se déconnecter, consulter la liste, voir la liste vide, consulter un détail, créer / modifier / supprimer un étudiant, être redirigé quand l'accès est refusé.
+
 ### Convention d'écriture
 
 Les 111 tests suivent le découpage `// GIVEN` (entrée et état de départ) → `// WHEN` (action mesurée) → `// THEN` (sortie attendue), de sorte que l'entrée et la sortie de chaque cas soient identifiables sans lire l'implémentation. Chaque test porte en commentaire son identifiant de plan (`A1`–`A58` pour l'unitaire, `B1`–`B52` pour l'intégration).
@@ -98,6 +132,8 @@ Les 111 tests suivent le découpage `// GIVEN` (entrée et état de départ) →
 Les cas d'erreur HTTP sont couverts au même titre que les cas nominaux : les 16 règles de traduction d'`HttpErrorService` (status 0, 401, 400 « Invalid credentials », overrides par écran, corps texte ou JSON), la propagation des `HttpErrorResponse` par les trois services, la branche 401 de l'intercepteur (déconnexion + redirection, et non-interception sur `/api/login`), et les états `errorMessage`/`loading` de chaque écran (404, 400 de validation, 500, back injoignable).
 
 Reste hors périmètre des tests Jest : le rendu visuel (CSS, thème Material) et les providers de bootstrap d'[app.config.ts](src/app/app.config.ts), couverts par les parcours Cypress.
+
+Reste hors périmètre des tests E2E : la couverture de code par les parcours Cypress, pour la raison d'outillage exposée ci-dessus. Les trois niveaux de la pyramide sont néanmoins tous couverts par un seuil de 80 % vérifié automatiquement — Jest pour le code front, JaCoCo pour le code back, `e2e-coverage.mjs` pour les parcours.
 
 ## Additional Resources
 

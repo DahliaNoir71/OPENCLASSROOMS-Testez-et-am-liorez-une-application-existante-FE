@@ -33,6 +33,11 @@ yarn-error.log
 .sass-cache/
 /connect.lock
 /coverage
+
+# Rapports Cypress (artefacts de build, régénérés par npm run e2e:coverage)
+/cypress/reports
+/cypress/screenshots
+/cypress/videos
 /libpeerconnection.log
 testem.log
 /typings

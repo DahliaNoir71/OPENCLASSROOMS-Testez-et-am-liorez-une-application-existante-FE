@@ -8,9 +8,13 @@
     "watch": "ng build --watch --configuration development",
     "test": "jest",
     "test:watch": "jest --watch",
-    "e2e": "cypress run --spec 'cypress/e2e/inscription-connexion.cy.ts,cypress/e2e/etudiants-crud.cy.ts,cypress/e2e/protection-routes.cy.ts'",
+    "e2e": "cypress run --spec 'cypress/e2e/accueil-deconnexion.cy.ts,cypress/e2e/inscription-connexion.cy.ts,cypress/e2e/etudiants-crud.cy.ts,cypress/e2e/protection-routes.cy.ts'",
     "e2e:smoke": "cypress run --spec 'cypress/e2e/smoke-back-reel.cy.ts'",
-    "e2e:open": "cypress open"
+    "e2e:open": "cypress open",
+    "e2e:clean": "node -e \"require('fs').rmSync('cypress/reports',{recursive:true,force:true})\"",
+    "e2e:report": "mochawesome-merge \"cypress/reports/json/*.json\" > cypress/reports/merged.json && marge cypress/reports/merged.json --reportDir cypress/reports/html --reportFilename execution --inline && node scripts/e2e-coverage.mjs",
+    "e2e:coverage": "npm run e2e:clean && npm run e2e && npm run e2e:report",
+    "e2e:coverage:full": "npm run e2e:clean && npm run e2e && npm run e2e:smoke && npm run e2e:report"
   },
   "private": true,
   "dependencies": {
@@ -37,6 +41,9 @@
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "jest-preset-angular": "^14.5.1",
+    "mochawesome": "^8.0.0",
+    "mochawesome-merge": "^5.1.1",
+    "mochawesome-report-generator": "^6.3.2",
     "typescript": "~5.7.2"
   }
 }
