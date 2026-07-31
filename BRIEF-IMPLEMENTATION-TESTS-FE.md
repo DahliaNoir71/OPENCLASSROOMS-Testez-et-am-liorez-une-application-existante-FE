@@ -984,6 +984,24 @@ Comportement nominal des guards, pas un cas d'erreur HTTP.
 
 ### 9.4 `smoke-back-reel.cy.ts` — **lot 15**
 
-> ⚠️ **Section incomplète — le message d'origine a été tronqué ici par la limite de 50 000 caractères de l'outil.** Le contenu qui suivait (détail des 4 étapes du smoke test back réel, §10 « tableau d'auto-vérification finale », et l'instruction de clôture du document) n'a pas été reçu. **À obtenir de l'utilisateur avant d'attaquer le lot 15** (et idéalement avant le lot 16, qui référence le tableau du §10).
+> Reçu le 2026-07-31, dans une version du document numérotée différemment (section 8.4 au lieu de 9.4) mais au contenu identique. Numérotation d'origine conservée ici par cohérence avec le reste de ce fichier.
 
-<!-- Fin du contenu reçu le 2026-07-30. Sections 9.4 (détail), 10 et au-delà manquantes : à compléter par l'utilisateur. -->
+Prérequis : back Spring + MySQL démarrés (cf. README back), `ng serve` avec proxy `/api → localhost:8080`. Aucun `cy.intercept` : requêtes réelles. Exécutable séparément des specs stubées (hors CI front si le back n'y est pas disponible).
+
+| Étape | Entrée | Sortie attendue |
+| --- | --- | --- |
+| 1 | visiter `/register` ; s'inscrire avec un **login unique** (suffixe horodaté) | URL `/login?registered=1` |
+| 2 | se connecter avec ce login | URL `/students` ; navbar « Déconnexion » |
+| 3 | créer un étudiant `Ada Lovelace` | page détail avec « Ada » et « Lovelace » |
+| 4 | supprimer cet étudiant depuis la liste (confirm accepté) | l'étudiant n'apparaît plus dans la table |
+
+## 10. Conformité aux contraintes du brief (auto-vérification) — **lot 16**
+
+| Contrainte | Vérification |
+| --- | --- |
+| Jest + Cypress uniquement | Niveaux 1–2 en Jest, niveau 3 en Cypress |
+| Pyramide des tests | 29 unitaires / 21 intégration / 3 parcours E2E stubés + 1 smoke |
+| Du simple au complexe | logique pure JWT → services HTTP → guards/interceptor → composants (statique → formulaires → CRUD) → E2E |
+| Aucun cas d'erreur | aucun `flush`/`intercept` avec statut 4xx ; `HttpErrorService`, `errorMessage` et la branche 401 exclus du périmètre (dit explicitement en 1.1) |
+| Pas d'effets de bord | chaque sortie attendue est une valeur émise, une requête capturée, un rendu DOM ou une URL de navigation ; `localStorage` uniquement en entrée ; le token sauvegardé au login n'est pas inspecté (seule la navigation l'est) ; la snackbar n'est pas assertée |
+| Entrées/sorties explicites | colonnes dédiées dans chaque tableau |
