@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { AuthService } from './auth.service';
 import { Login } from '../models/Login';
@@ -156,5 +156,65 @@ describe('AuthService', () => {
     req.flush('fake.jwt.token');
 
     expect(response).toEqual({ token: 'fake.jwt.token' });
+  });
+
+  // A52
+  it('login propage le 401 sans enregistrer de token', () => {
+    const service = createService();
+    let error: HttpErrorResponse | undefined;
+
+    service.login({ login: 'jdoe', password: 'mauvais' })
+      .subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/login').flush('Invalid credentials', {
+      status: 401,
+      statusText: 'Unauthorized',
+    });
+
+    expect(error?.status).toBe(401);
+    expect(service.getToken()).toBeNull();
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // A53
+  it('login propage une erreur réseau (back arrêté)', () => {
+    const service = createService();
+    let error: HttpErrorResponse | undefined;
+
+    service.login({ login: 'jdoe', password: 'pwd' })
+      .subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/login').error(new ProgressEvent('error'));
+
+    expect(error?.status).toBe(0);
+  });
+
+  // A54
+  // Longueur base64url ≡ 1 (mod 4) : padding impossible, base64UrlDecode lève.
+  // L'exception est absorbée par readExp, qui retourne null => déconnecté.
+  it('payload base64url de longueur invalide → non authentifié', () => {
+    const service = createService();
+    service.saveToken('header.aaaaa.signature');
+    expect(service.isAuthenticated()).toBe(false);
+  });
+
+  // A55
+  // Longueur ≡ 3 (mod 4) : un seul '=' de padding suffit, le décodage aboutit.
+  it('payload base64url nécessitant un seul « = » de padding est décodé', () => {
+    const exp = futureExp();
+    // On cherche un payload dont l'encodage base64url a une longueur ≡ 3 (mod 4).
+    let token = '';
+    for (let i = 0; i < 8; i++) {
+      const candidate = makeJwt(exp, { pad: 'x'.repeat(i) });
+      if (candidate.split('.')[1].length % 4 === 3) {
+        token = candidate;
+        break;
+      }
+    }
+    expect(token).not.toBe('');
+
+    const service = createService();
+    service.saveToken(token);
+    expect(service.isAuthenticated()).toBe(true);
   });
 });

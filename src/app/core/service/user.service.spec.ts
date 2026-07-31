@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 
 import { UserService } from './user.service';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { Register } from '../models/Register';
 
@@ -49,5 +49,34 @@ describe('UserService', () => {
     req.flush({});
 
     expect(response).toEqual({});
+  });
+
+  // A50
+  it('register propage le 400 « login déjà utilisé »', () => {
+    const user: Register = { firstName: 'Ada', lastName: 'Lovelace', login: 'ada', password: 'pwd' };
+    let error: HttpErrorResponse | undefined;
+
+    service.register(user).subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/register').flush(
+      { message: 'Login already used' },
+      { status: 400, statusText: 'Bad Request' }
+    );
+
+    expect(error).toBeInstanceOf(HttpErrorResponse);
+    expect(error?.status).toBe(400);
+    expect(error?.error).toEqual({ message: 'Login already used' });
+  });
+
+  // A51
+  it('register propage une erreur réseau (status 0)', () => {
+    const user: Register = { firstName: 'Ada', lastName: 'Lovelace', login: 'ada', password: 'pwd' };
+    let error: HttpErrorResponse | undefined;
+
+    service.register(user).subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/register').error(new ProgressEvent('error'));
+
+    expect(error?.status).toBe(0);
   });
 });

@@ -1,5 +1,5 @@
 import { TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { StudentService } from './student.service';
 import { Student } from '../models/Student';
@@ -93,5 +93,62 @@ describe('StudentService', () => {
     req.flush(null);
 
     expect(completed).toBe(true);
+  });
+
+  // Chemins d'erreur : le service ne capture rien, il propage le
+  // HttpErrorResponse aux composants qui le traduisent via HttpErrorService.
+
+  // A46
+  it('getById propage le 404 sans le transformer', () => {
+    let error: HttpErrorResponse | undefined;
+
+    service.getById(99).subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/students/99').flush(
+      { message: 'Student not found' },
+      { status: 404, statusText: 'Not Found' }
+    );
+
+    expect(error).toBeInstanceOf(HttpErrorResponse);
+    expect(error?.status).toBe(404);
+    expect(error?.error).toEqual({ message: 'Student not found' });
+  });
+
+  // A47
+  it('create propage le 400 de validation', () => {
+    let error: HttpErrorResponse | undefined;
+    const payload: StudentRequest = { firstName: '', lastName: 'Lovelace' };
+
+    service.create(payload).subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/students').flush(
+      { message: 'firstName ne doit pas être vide' },
+      { status: 400, statusText: 'Bad Request' }
+    );
+
+    expect(error?.status).toBe(400);
+  });
+
+  // A48
+  it('delete propage une erreur réseau (status 0)', () => {
+    let error: HttpErrorResponse | undefined;
+
+    service.delete(3).subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/students/3').error(new ProgressEvent('error'));
+
+    expect(error?.status).toBe(0);
+  });
+
+  // A49
+  it('update propage le 404 sur un étudiant supprimé entre-temps', () => {
+    let error: HttpErrorResponse | undefined;
+    const payload: StudentRequest = { firstName: 'Grace', lastName: 'Hopper' };
+
+    service.update(2, payload).subscribe({ error: (err: HttpErrorResponse) => (error = err) });
+
+    httpTesting.expectOne('/api/students/2').flush(null, { status: 404, statusText: 'Not Found' });
+
+    expect(error?.status).toBe(404);
   });
 });

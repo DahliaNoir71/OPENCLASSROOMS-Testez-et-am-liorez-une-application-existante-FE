@@ -110,4 +110,68 @@ describe('LoginComponent', () => {
 
     expect(router.navigateByUrl).toHaveBeenCalledWith('/students/5');
   });
+
+  // Remplit le formulaire avec des identifiants valides et soumet.
+  const submitValidForm = (): void => {
+    setInputValue('input[formControlName="login"]', 'jdoe');
+    setInputValue('input[formControlName="password"]', 'mauvais');
+    fixture.detectChanges();
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement)
+      .dispatchEvent(new Event('submit'));
+  };
+
+  // B30
+  it('401 → affiche « Identifiants invalides. » et ne navigue pas', () => {
+    fixture = setup();
+    fixture.detectChanges();
+    const navigateByUrl = jest.spyOn(router, 'navigateByUrl');
+
+    submitValidForm();
+    httpTesting.expectOne('/api/login')
+      .flush('Invalid credentials', { status: 401, statusText: 'Unauthorized' });
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.loading).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Identifiants invalides.');
+    expect(navigateByUrl).not.toHaveBeenCalled();
+  });
+
+  // B31
+  it('back injoignable → affiche le message réseau', () => {
+    fixture = setup();
+    fixture.detectChanges();
+
+    submitValidForm();
+    httpTesting.expectOne('/api/login').error(new ProgressEvent('error'));
+    fixture.detectChanges();
+
+    expect((fixture.nativeElement as HTMLElement).textContent).toContain('Serveur injoignable.');
+  });
+
+  // B32
+  it('onReset vide le formulaire et efface le message d\'erreur', () => {
+    fixture = setup();
+    fixture.detectChanges();
+
+    submitValidForm();
+    httpTesting.expectOne('/api/login')
+      .flush('Invalid credentials', { status: 401, statusText: 'Unauthorized' });
+    fixture.detectChanges();
+    expect(fixture.componentInstance.errorMessage).not.toBeNull();
+
+    (fixture.nativeElement.querySelector('button[type="reset"]') as HTMLButtonElement).click();
+    fixture.detectChanges();
+
+    expect(fixture.componentInstance.submitted).toBe(false);
+    expect(fixture.componentInstance.errorMessage).toBeNull();
+    expect(fixture.componentInstance.loginForm.get('login')?.value).toBeNull();
+  });
+
+  // B33
+  it('expose les contrôles du formulaire via le getter form', () => {
+    fixture = setup();
+    fixture.detectChanges();
+
+    expect(Object.keys(fixture.componentInstance.form)).toEqual(['login', 'password']);
+  });
 });

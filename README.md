@@ -42,8 +42,8 @@ Le projet suit une pyramide de tests à trois niveaux :
 
 | Niveau | Outil | Volume | Périmètre |
 | --- | --- | --- | --- |
-| Unitaire | Jest | 29 tests | `AuthService`, `UserService`, `StudentService`, guards, interceptor |
-| Intégration | Jest + Angular TestBed | 21 tests | Composants standalone (navbar, landing, login, register, liste/détail/formulaire étudiant) |
+| Unitaire | Jest | 62 tests | `AuthService`, `UserService`, `StudentService`, `HttpErrorService`, guards, interceptor, table de routage |
+| Intégration | Jest + Angular TestBed | 49 tests | Composants standalone (navbar, landing, login, register, liste/détail/formulaire étudiant) |
 | End-to-end | Cypress | 3 specs stubées (7 tests) + 1 smoke test (1 test) | Parcours utilisateur complets, dans un vrai navigateur |
 
 ### Tests unitaires et d'intégration (Jest)
@@ -53,6 +53,15 @@ npm test
 ```
 
 Aucun prérequis particulier au-delà de `npm install`. Un rapport de couverture est généré à chaque exécution dans `coverage/` ; ouvrir `coverage/index.html` dans un navigateur pour le consulter.
+
+| Métrique | Couverture |
+| --- | --- |
+| Branches | **100 %** (57/57) |
+| Fonctions | **100 %** (64/64) |
+| Instructions | 98,44 % (381/387) |
+| Lignes | 98,32 % (353/359) |
+
+`collectCoverageFrom` instrumente tout `src/app/**`, y compris les fichiers qu'aucun spec n'importe : le taux publié n'est pas restreint au code déjà testé. Les 6 instructions restantes sont celles d'[app.config.ts](src/app/app.config.ts), la racine de composition (providers du bootstrap) : elle n'est exécutée que par `main.ts` et se trouve validée de bout en bout par les parcours Cypress.
 
 ### Tests end-to-end stubés (Cypress)
 
@@ -74,7 +83,9 @@ Pour garantir l'unicité entre exécutions, le login utilisé est suffixé par u
 
 ### Périmètre assumé
 
-Aucun cas d'erreur HTTP (4xx/5xx) n'est testé : ni `HttpErrorService`, ni les messages d'erreur serveur, ni les états `errorMessage`/`loading` des composants, ni la branche 401 de l'intercepteur. Seuls les comportements nominaux sont couverts, y compris les cas limites qui restent des succès applicatifs (token expiré/malformé → non authentifié, formulaire invalide → aucune requête, garde qui redirige).
+Les cas d'erreur HTTP sont couverts au même titre que les cas nominaux : les 16 règles de traduction d'`HttpErrorService` (status 0, 401, 400 « Invalid credentials », overrides par écran, corps texte ou JSON), la propagation des `HttpErrorResponse` par les trois services, la branche 401 de l'intercepteur (déconnexion + redirection, et non-interception sur `/api/login`), et les états `errorMessage`/`loading` de chaque écran (404, 400 de validation, 500, back injoignable).
+
+Reste hors périmètre des tests Jest : le rendu visuel (CSS, thème Material) et les providers de bootstrap d'[app.config.ts](src/app/app.config.ts), couverts par les parcours Cypress.
 
 ## Additional Resources
 
