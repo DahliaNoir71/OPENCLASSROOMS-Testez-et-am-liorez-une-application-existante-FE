@@ -52,14 +52,22 @@ Le projet suit une pyramide de tests à trois niveaux :
 npm test
 ```
 
-Aucun prérequis particulier au-delà de `npm install`. Un rapport de couverture est généré à chaque exécution dans `coverage/` ; ouvrir `coverage/index.html` dans un navigateur pour le consulter.
+Aucun prérequis particulier au-delà de `npm install`.
 
-| Métrique | Couverture |
-| --- | --- |
-| Branches | **100 %** (57/57) |
-| Fonctions | **100 %** (64/64) |
-| Instructions | 98,44 % (381/387) |
-| Lignes | 98,32 % (353/359) |
+**Seuil exigé : 80 % minimum sur chaque métrique.** Il n'est pas déclaratif : le `coverageThreshold` de [jest.config.js](jest.config.js) le fait appliquer à chaque exécution — `npm test` échoue si une métrique repasse en dessous, même quand tous les tests passent.
+
+| Métrique | Seuil requis | Mesuré | Statut |
+| --- | --- | --- | --- |
+| Branches | ≥ 80 % | **100 %** (57/57) | ✅ +20 pts |
+| Fonctions | ≥ 80 % | **100 %** (64/64) | ✅ +20 pts |
+| Instructions | ≥ 80 % | **98,44 %** (381/387) | ✅ +18 pts |
+| Lignes | ≥ 80 % | **98,32 %** (353/359) | ✅ +18 pts |
+
+`npm test` produit trois sorties : le détail fichier par fichier dans le terminal, le total (`Coverage summary`), et le rapport navigable `coverage/index.html`. En cas de dépassement par le bas, le message nomme la métrique fautive :
+
+```
+Jest: "global" coverage threshold for statements (99%) not met: 98.44%
+```
 
 `collectCoverageFrom` instrumente tout `src/app/**`, y compris les fichiers qu'aucun spec n'importe : le taux publié n'est pas restreint au code déjà testé. Les 6 instructions restantes sont celles d'[app.config.ts](src/app/app.config.ts), la racine de composition (providers du bootstrap) : elle n'est exécutée que par `main.ts` et se trouve validée de bout en bout par les parcours Cypress.
 
