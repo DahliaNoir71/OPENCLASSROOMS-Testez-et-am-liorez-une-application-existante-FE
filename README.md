@@ -81,6 +81,10 @@ npm run e2e:smoke
 
 Pour garantir l'unicité entre exécutions, le login utilisé est suffixé par un timestamp. **Résidu de données connu** : l'étudiant créé est supprimé en fin de parcours, mais l'utilisateur inscrit reste en base (aucun endpoint de suppression de compte n'est exposé côté front).
 
+### Convention d'écriture
+
+Les 111 tests suivent le découpage `// GIVEN` (entrée et état de départ) → `// WHEN` (action mesurée) → `// THEN` (sortie attendue), de sorte que l'entrée et la sortie de chaque cas soient identifiables sans lire l'implémentation. Chaque test porte en commentaire son identifiant de plan (`A1`–`A58` pour l'unitaire, `B1`–`B52` pour l'intégration).
+
 ### Périmètre assumé
 
 Les cas d'erreur HTTP sont couverts au même titre que les cas nominaux : les 16 règles de traduction d'`HttpErrorService` (status 0, 401, 400 « Invalid credentials », overrides par écran, corps texte ou JSON), la propagation des `HttpErrorResponse` par les trois services, la branche 401 de l'intercepteur (déconnexion + redirection, et non-interception sur `/api/login`), et les états `errorMessage`/`loading` de chaque écran (404, 400 de validation, 500, back injoignable).

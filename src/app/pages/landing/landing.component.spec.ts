@@ -12,9 +12,13 @@ describe('LandingComponent', () => {
 
   // B1
   it("affiche les liens vers la connexion et l'inscription", () => {
+    // GIVEN — page d'accueil publique, aucun état préalable
     const fixture = TestBed.createComponent(LandingComponent);
+
+    // WHEN
     fixture.detectChanges();
 
+    // THEN
     const nativeElement = fixture.nativeElement as HTMLElement;
     expect(nativeElement.querySelector('a[href="/login"]')).toBeTruthy();
     expect(nativeElement.querySelector('a[href="/register"]')).toBeTruthy();

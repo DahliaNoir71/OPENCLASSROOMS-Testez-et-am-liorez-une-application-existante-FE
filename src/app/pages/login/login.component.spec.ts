@@ -38,99 +38,106 @@ describe('LoginComponent', () => {
     input.dispatchEvent(new Event('input'));
   };
 
+  const submit = (): void =>
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement)
+      .dispatchEvent(new Event('submit'));
+
+  // Remplit le formulaire avec des identifiants valides puis soumet.
+  const fillAndSubmit = (password = 'pwd'): void => {
+    setInputValue('input[formControlName="login"]', 'jdoe');
+    setInputValue('input[formControlName="password"]', password);
+    fixture.detectChanges();
+    submit();
+  };
+
   afterEach(() => {
     httpTesting?.verify();
   });
 
   // B7
   it('affiche la bannière après inscription', () => {
+    // GIVEN — arrivée depuis l'inscription (?registered=1)
     fixture = setup({ registered: '1' });
+
+    // WHEN
     fixture.detectChanges();
 
+    // THEN
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Compte créé. Connectez-vous.');
   });
 
   // B8
   it("n'affiche pas la bannière sans le paramètre", () => {
+    // GIVEN — aucun query param
     fixture = setup();
+
+    // WHEN
     fixture.detectChanges();
 
+    // THEN
     expect((fixture.nativeElement as HTMLElement).textContent).not.toContain('Compte créé. Connectez-vous.');
   });
 
   // B9
   it('ne soumet rien si le formulaire est invalide', () => {
+    // GIVEN — formulaire vierge, les deux champs sont requis
     fixture = setup();
     fixture.detectChanges();
 
-    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit'));
+    // WHEN
+    submit();
     fixture.detectChanges();
 
+    // THEN — aucune requête émise
     httpTesting.expectNone('/api/login');
   });
 
   // B10
   it('connexion réussie → navigue vers /students par défaut', () => {
+    // GIVEN — identifiants valides, aucun returnUrl
     fixture = setup();
     fixture.detectChanges();
-
-    setInputValue('input[formControlName="login"]', 'jdoe');
-    setInputValue('input[formControlName="password"]', 'pwd');
-    fixture.detectChanges();
-
     jest.spyOn(router, 'navigateByUrl');
 
-    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit'));
-
+    // WHEN
+    fillAndSubmit();
     const req = httpTesting.expectOne('/api/login');
-    expect(req.request.body).toEqual({ login: 'jdoe', password: 'pwd' });
     req.flush('fake.jwt.token');
 
+    // THEN — POST portant les identifiants, puis redirection par défaut
+    expect(req.request.body).toEqual({ login: 'jdoe', password: 'pwd' });
     expect(router.navigateByUrl).toHaveBeenCalledWith('/students');
   });
 
   // B11
   it('connexion réussie → navigue vers le returnUrl fourni', () => {
+    // GIVEN — returnUrl posé par le guard
     fixture = setup({ returnUrl: '/students/5' });
     fixture.detectChanges();
-
-    setInputValue('input[formControlName="login"]', 'jdoe');
-    setInputValue('input[formControlName="password"]', 'pwd');
-    fixture.detectChanges();
-
     jest.spyOn(router, 'navigateByUrl');
 
-    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit'));
+    // WHEN
+    fillAndSubmit();
+    httpTesting.expectOne('/api/login').flush('fake.jwt.token');
 
-    const req = httpTesting.expectOne('/api/login');
-    req.flush('fake.jwt.token');
-
+    // THEN
     expect(router.navigateByUrl).toHaveBeenCalledWith('/students/5');
   });
 
-  // Remplit le formulaire avec des identifiants valides et soumet.
-  const submitValidForm = (): void => {
-    setInputValue('input[formControlName="login"]', 'jdoe');
-    setInputValue('input[formControlName="password"]', 'mauvais');
-    fixture.detectChanges();
-    (fixture.nativeElement.querySelector('form') as HTMLFormElement)
-      .dispatchEvent(new Event('submit'));
-  };
-
   // B30
   it('401 → affiche « Identifiants invalides. » et ne navigue pas', () => {
+    // GIVEN
     fixture = setup();
     fixture.detectChanges();
     const navigateByUrl = jest.spyOn(router, 'navigateByUrl');
 
-    submitValidForm();
+    // WHEN — le back refuse les identifiants
+    fillAndSubmit('mauvais');
     httpTesting.expectOne('/api/login')
       .flush('Invalid credentials', { status: 401, statusText: 'Unauthorized' });
     fixture.detectChanges();
 
+    // THEN — message affiché, chargement terminé, pas de navigation
     expect(fixture.componentInstance.loading).toBe(false);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Identifiants invalides.');
     expect(navigateByUrl).not.toHaveBeenCalled();
@@ -138,30 +145,35 @@ describe('LoginComponent', () => {
 
   // B31
   it('back injoignable → affiche le message réseau', () => {
+    // GIVEN
     fixture = setup();
     fixture.detectChanges();
 
-    submitValidForm();
+    // WHEN — échec transport
+    fillAndSubmit();
     httpTesting.expectOne('/api/login').error(new ProgressEvent('error'));
     fixture.detectChanges();
 
+    // THEN
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Serveur injoignable.');
   });
 
   // B32
-  it('onReset vide le formulaire et efface le message d\'erreur', () => {
+  it("onReset vide le formulaire et efface le message d'erreur", () => {
+    // GIVEN — un échec de connexion a laissé un message affiché
     fixture = setup();
     fixture.detectChanges();
-
-    submitValidForm();
+    fillAndSubmit('mauvais');
     httpTesting.expectOne('/api/login')
       .flush('Invalid credentials', { status: 401, statusText: 'Unauthorized' });
     fixture.detectChanges();
     expect(fixture.componentInstance.errorMessage).not.toBeNull();
 
+    // WHEN — clic sur Réinitialiser
     (fixture.nativeElement.querySelector('button[type="reset"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
+    // THEN — état de soumission, message et champs remis à zéro
     expect(fixture.componentInstance.submitted).toBe(false);
     expect(fixture.componentInstance.errorMessage).toBeNull();
     expect(fixture.componentInstance.loginForm.get('login')?.value).toBeNull();
@@ -169,9 +181,14 @@ describe('LoginComponent', () => {
 
   // B33
   it('expose les contrôles du formulaire via le getter form', () => {
+    // GIVEN
     fixture = setup();
     fixture.detectChanges();
 
-    expect(Object.keys(fixture.componentInstance.form)).toEqual(['login', 'password']);
+    // WHEN
+    const controls = Object.keys(fixture.componentInstance.form);
+
+    // THEN — le getter expose exactement les deux contrôles attendus
+    expect(controls).toEqual(['login', 'password']);
   });
 });

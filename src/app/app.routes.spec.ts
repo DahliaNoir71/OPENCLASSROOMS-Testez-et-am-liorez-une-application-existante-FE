@@ -9,7 +9,7 @@ import { StudentDetailComponent } from './pages/students/student-detail/student-
 import { StudentFormComponent } from './pages/students/student-form/student-form.component';
 import { StudentListComponent } from './pages/students/student-list/student-list.component';
 
-// Le table de routage porte deux contrats non vérifiables par les tests de
+// La table de routage porte deux contrats non vérifiables par les tests de
 // composants : les gardes attachés à chaque écran, et l'ORDRE des routes
 // enfants ('new' avant ':id', ':id/edit' avant ':id'), qu'une réorganisation
 // casserait silencieusement.
@@ -22,6 +22,9 @@ describe('app.routes', () => {
 
   // B49
   it('les écrans publics sont protégés par guestGuard', () => {
+    // GIVEN la table de routage exportée par app.routes.ts
+    // WHEN on inspecte les routes '', 'register' et 'login'
+    // THEN chacune rend son composant et porte guestGuard
     expect(routeFor('').component).toBe(LandingComponent);
     expect(routeFor('').canActivate).toEqual([guestGuard]);
     expect(routeFor('register').component).toBe(RegisterComponent);
@@ -32,13 +35,19 @@ describe('app.routes', () => {
 
   // B50
   it('la section /students est protégée par authGuard', () => {
+    // GIVEN la table de routage
+    // WHEN on inspecte la route parente 'students'
+    // THEN authGuard y est attaché (les enfants en héritent)
     expect(routeFor('students').canActivate).toEqual([authGuard]);
   });
 
   // B51
   it("les routes enfants de /students sont déclarées dans l'ordre attendu", () => {
+    // GIVEN la route parente 'students'
+    // WHEN on lit ses enfants
     const children = routeFor('students').children ?? [];
 
+    // THEN l'ordre est '' → new → :id/edit → :id, chacun sur son composant
     expect(children.map(child => child.path)).toEqual(['', 'new', ':id/edit', ':id']);
     expect(children.map(child => child.component)).toEqual([
       StudentListComponent,
@@ -50,6 +59,9 @@ describe('app.routes', () => {
 
   // B52
   it("le repli ** redirige vers l'accueil et reste en dernier", () => {
+    // GIVEN la table de routage
+    // WHEN on inspecte la route joker
+    // THEN elle redirige vers '' et occupe la dernière position
     expect(routeFor('**').redirectTo).toBe('');
     expect(routes[routes.length - 1].path).toBe('**');
   });

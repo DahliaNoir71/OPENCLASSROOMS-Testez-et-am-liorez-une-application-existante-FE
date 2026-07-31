@@ -20,13 +20,21 @@ describe('guestGuard', () => {
 
   // A24
   it('guestGuard autorise un invité', () => {
+    // GIVEN utilisateur non authentifié
+    // WHEN
     const { result } = runGuard(false);
+
+    // THEN — accès accordé aux écrans publics
     expect(result).toBe(true);
   });
 
   // A25
   it('guestGuard redirige un connecté vers /students', () => {
+    // GIVEN utilisateur déjà authentifié
+    // WHEN
     const { result, router } = runGuard(true);
+
+    // THEN — UrlTree vers /students
     expect(router.serializeUrl(result as UrlTree)).toBe('/students');
   });
 });

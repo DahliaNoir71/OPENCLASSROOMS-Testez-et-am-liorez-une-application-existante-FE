@@ -15,6 +15,20 @@ describe('RegisterComponent', () => {
     input.dispatchEvent(new Event('input'));
   };
 
+  const submit = (): void =>
+    (fixture.nativeElement.querySelector('form') as HTMLFormElement)
+      .dispatchEvent(new Event('submit'));
+
+  // Remplit les quatre champs requis puis soumet.
+  const fillAndSubmit = (): void => {
+    setInputValue('input[formControlName="firstName"]', 'Ada');
+    setInputValue('input[formControlName="lastName"]', 'Lovelace');
+    setInputValue('input[formControlName="login"]', 'ada');
+    setInputValue('input[formControlName="password"]', 'pwd');
+    fixture.detectChanges();
+    submit();
+  };
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       imports: [RegisterComponent],
@@ -32,53 +46,43 @@ describe('RegisterComponent', () => {
 
   // B5
   it('ne soumet rien si le formulaire est invalide', () => {
-    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit'));
+    // GIVEN — formulaire vierge, les quatre champs sont requis
+
+    // WHEN
+    submit();
     fixture.detectChanges();
 
+    // THEN
     httpTesting.expectNone('/api/register');
   });
 
   // B6
   it("soumet l'inscription et navigue vers /login?registered=1", () => {
-    setInputValue('input[formControlName="firstName"]', 'Ada');
-    setInputValue('input[formControlName="lastName"]', 'Lovelace');
-    setInputValue('input[formControlName="login"]', 'ada');
-    setInputValue('input[formControlName="password"]', 'pwd');
-    fixture.detectChanges();
-
+    // GIVEN
     jest.spyOn(router, 'navigate');
 
-    const form = fixture.nativeElement.querySelector('form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit'));
-
+    // WHEN
+    fillAndSubmit();
     const req = httpTesting.expectOne('/api/register');
-    expect(req.request.body).toEqual({ firstName: 'Ada', lastName: 'Lovelace', login: 'ada', password: 'pwd' });
     req.flush({});
 
+    // THEN — POST portant les quatre champs, puis redirection avec la bannière
+    expect(req.request.body).toEqual({ firstName: 'Ada', lastName: 'Lovelace', login: 'ada', password: 'pwd' });
     expect(router.navigate).toHaveBeenCalledWith(['/login'], { queryParams: { registered: '1' } });
   });
 
-  // Remplit les quatre champs requis et soumet.
-  const submitValidForm = (): void => {
-    setInputValue('input[formControlName="firstName"]', 'Ada');
-    setInputValue('input[formControlName="lastName"]', 'Lovelace');
-    setInputValue('input[formControlName="login"]', 'ada');
-    setInputValue('input[formControlName="password"]', 'pwd');
-    fixture.detectChanges();
-    (fixture.nativeElement.querySelector('form') as HTMLFormElement)
-      .dispatchEvent(new Event('submit'));
-  };
-
   // B34
   it('400 → affiche « Ce login est déjà utilisé. » et ne navigue pas', () => {
+    // GIVEN
     const navigate = jest.spyOn(router, 'navigate');
 
-    submitValidForm();
+    // WHEN — le back refuse un login déjà pris
+    fillAndSubmit();
     httpTesting.expectOne('/api/register')
       .flush({ message: 'Login already used' }, { status: 400, statusText: 'Bad Request' });
     fixture.detectChanges();
 
+    // THEN — override du code 400 propre à cet écran, pas de navigation
     expect(fixture.componentInstance.loading).toBe(false);
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Ce login est déjà utilisé.');
     expect(navigate).not.toHaveBeenCalled();
@@ -86,24 +90,31 @@ describe('RegisterComponent', () => {
 
   // B35
   it('back injoignable → affiche le message réseau', () => {
-    submitValidForm();
+    // GIVEN — formulaire valide
+
+    // WHEN — échec transport
+    fillAndSubmit();
     httpTesting.expectOne('/api/register').error(new ProgressEvent('error'));
     fixture.detectChanges();
 
+    // THEN
     expect((fixture.nativeElement as HTMLElement).textContent).toContain('Serveur injoignable.');
   });
 
   // B36
   it("onReset vide le formulaire et efface le message d'erreur", () => {
-    submitValidForm();
+    // GIVEN — un échec a laissé un message affiché
+    fillAndSubmit();
     httpTesting.expectOne('/api/register')
       .flush({ message: 'Login already used' }, { status: 400, statusText: 'Bad Request' });
     fixture.detectChanges();
     expect(fixture.componentInstance.errorMessage).not.toBeNull();
 
+    // WHEN
     (fixture.nativeElement.querySelector('button[type="reset"]') as HTMLButtonElement).click();
     fixture.detectChanges();
 
+    // THEN
     expect(fixture.componentInstance.submitted).toBe(false);
     expect(fixture.componentInstance.errorMessage).toBeNull();
     expect(fixture.componentInstance.registerForm.get('login')?.value).toBeNull();
@@ -111,7 +122,11 @@ describe('RegisterComponent', () => {
 
   // B37
   it('expose les contrôles du formulaire via le getter form', () => {
-    expect(Object.keys(fixture.componentInstance.form))
-      .toEqual(['firstName', 'lastName', 'login', 'password']);
+    // GIVEN le composant initialisé
+    // WHEN
+    const controls = Object.keys(fixture.componentInstance.form);
+
+    // THEN — le getter expose exactement les quatre contrôles attendus
+    expect(controls).toEqual(['firstName', 'lastName', 'login', 'password']);
   });
 });
